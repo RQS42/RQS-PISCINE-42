@@ -1,0 +1,9 @@
+# 42 Exam Simulator Ignored Files
+rendu/
+subjects/
+trace/
+server/
+archives/
+grademe_temp/
+__pycache__/
+*.pyc
