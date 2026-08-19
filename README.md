@@ -97,14 +97,18 @@ When you type `grademe`, the evaluation engine creates a temporary sandbox, clon
 
 ## 🚀 Installation & Quick Start
 
-Clone the repository and run the launcher — that's it:
-
+### 1. Clone the repository
 ```bash
-# 1. Clone the project
 git clone https://github.com/RQS42/RQS-PISCINE-42.git
-cd RQS-PISCINE-42
+```
 
-# 2. Launch the simulator
+### 2. Enter the directory
+```bash
+cd RQS-PISCINE-42
+```
+
+### 3. Launch the simulator
+```bash
 python3 dont_panic.py
 ```
 *(On Windows PowerShell, use `python dont_panic.py`)*
