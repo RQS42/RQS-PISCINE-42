@@ -22,9 +22,10 @@ During the first exam sessions, I realized how drastically the exam environment 
 One evening, stressing over the upcoming exam, I thought:
 > *"What if I had a small local tool to practice taking an exam from start to finish, completely offline?"*
 
-So I started writing a script. What began as a simple test runner quickly evolved into a full simulation: dynamic exercise assignment, a local bare Git repository mimicking Vogsphere, automated multi-case grading with compilation flags, level progression, and trace generation.
+So I started experimenting with the idea, and it quickly got completely out of hand.
 
-More than anything, building this project was my way of truly understanding systems, Git mechanics, and C — by building something useful instead of just doing the assignments.
+What started as a simple way to simulate an exam at home slowly turned into a much bigger project. The simulator now recreates several parts of the exam workflow locally: exercise assignment, the Git submission process, a local Vogsphere-like repository, automated grading, progression between difficulty levels and detailed traces when something goes wrong.
+
 
 ---
 
