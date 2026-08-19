@@ -3,7 +3,8 @@ rendu/
 subjects/
 trace/
 server/
-archives/
+subetha_archives/
 grademe_temp/
 __pycache__/
 *.pyc
+.DS_Store
