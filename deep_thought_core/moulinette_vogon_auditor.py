@@ -18,6 +18,7 @@ anti-infinite loop timeout protection, signal/segfault handling, and diff trace 
 
 import os
 import sys
+import re
 import time
 import shutil
 import tempfile
@@ -247,8 +248,9 @@ int ascending(int a, int b) {
     return (a <= b);
 }
 
-t_list *create_node(int data) {
-    t_list *n = malloc(sizeof(t_list));
+t_list *create_node(void *data) {
+    t_list *n = (t_list *)malloc(sizeof(t_list));
+    if (!n) return NULL;
     n->data = data;
     n->next = NULL;
     return n;
@@ -260,7 +262,7 @@ int main(void) {
     int arr[] = {42, 10, 5, 100, 24, 5, 0, -10};
     t_list *head = NULL, *cur = NULL;
     for (int i = 0; i < 8; i++) {
-        t_list *n = create_node(arr[i]);
+        t_list *n = create_node(&arr[i]);
         if (!head) head = n;
         else cur->next = n;
         cur = n;
@@ -269,12 +271,122 @@ int main(void) {
     cur = head;
     printf("sorted: ");
     while (cur) {
-        printf("%d ", cur->data);
+        printf("%d ", *(int *)cur->data);
         t_list *tmp = cur;
         cur = cur->next;
         free(tmp);
     }
     printf("\\n");
+    return 0;
+}
+""",
+    "ft_print_numbers": """
+#include <unistd.h>
+void ft_print_numbers(void);
+int main(void) {
+    ft_print_numbers();
+    write(1, "\\n", 1);
+    return 0;
+}
+""",
+    "ft_putstr": """
+#include <unistd.h>
+void ft_putstr(char *str);
+int main(void) {
+    ft_putstr("Hello World!");
+    ft_putstr("\\n");
+    ft_putstr("");
+    ft_putstr("42 Piscine\\n");
+    return 0;
+}
+""",
+    "is_power_of_2": """
+#include <stdio.h>
+int is_power_of_2(unsigned int n);
+int main(void) {
+    unsigned int tests[] = {0, 1, 2, 3, 4, 5, 8, 16, 32, 100, 1024, 2048, 4294967295U};
+    for (int i = 0; i < 13; i++) {
+        printf("is_power_of_2(%u) = %d\\n", tests[i], is_power_of_2(tests[i]));
+    }
+    return 0;
+}
+""",
+    "max": """
+#include <stdio.h>
+int max(int *tab, unsigned int len);
+int main(void) {
+    int t1[] = {1, 2, 3, 42, 5};
+    int t2[] = {-10, -5, -42, -1};
+    int t3[] = {42};
+    printf("max(t1, 5) = %d\\n", max(t1, 5));
+    printf("max(t2, 4) = %d\\n", max(t2, 4));
+    printf("max(t3, 1) = %d\\n", max(t3, 1));
+    printf("max(NULL, 0) = %d\\n", max(NULL, 0));
+    return 0;
+}
+""",
+    "ft_strcspn": """
+#include <stdio.h>
+#include <stddef.h>
+size_t ft_strcspn(const char *s, const char *reject);
+int main(void) {
+    printf("strcspn: %zu\\n", ft_strcspn("hello world", "ow"));
+    printf("strcspn: %zu\\n", ft_strcspn("42 piscine", "xyz"));
+    printf("strcspn: %zu\\n", ft_strcspn("test", ""));
+    printf("strcspn: %zu\\n", ft_strcspn("", "abc"));
+    return 0;
+}
+""",
+    "ft_rrange": """
+#include <stdio.h>
+#include <stdlib.h>
+int *ft_rrange(int start, int end);
+int main(void) {
+    int pairs[][2] = {{1, 3}, {-1, 2}, {0, 0}, {0, -3}, {10, 5}};
+    for (int p = 0; p < 5; p++) {
+        int start = pairs[p][0];
+        int end = pairs[p][1];
+        int *tab = ft_rrange(start, end);
+        if (!tab) {
+            printf("NULL\\n");
+        } else {
+            int len = (end >= start) ? (end - start + 1) : (start - end + 1);
+            printf("rrange(%d, %d): ", start, end);
+            for (int i = 0; i < len; i++) {
+                printf("%d ", tab[i]);
+            }
+            printf("\\n");
+            free(tab);
+        }
+    }
+    return 0;
+}
+""",
+    "ft_list_size": """
+#include <stdio.h>
+#include <stdlib.h>
+#include "list.h"
+
+int ft_list_size(t_list *begin_list);
+
+t_list *create_node(void *data) {
+    t_list *node = (t_list *)malloc(sizeof(t_list));
+    if (!node) return NULL;
+    node->data = data;
+    node->next = NULL;
+    return node;
+}
+
+int main(void) {
+    printf("list_size(NULL) = %d\\n", ft_list_size(NULL));
+    t_list *n1 = create_node("a");
+    printf("list_size(1 node) = %d\\n", ft_list_size(n1));
+    t_list *n2 = create_node("b");
+    n1->next = n2;
+    t_list *n3 = create_node("c");
+    n2->next = n3;
+    printf("list_size(3 nodes) = %d\\n", ft_list_size(n1));
+    free(n3); free(n2); free(n1);
     return 0;
 }
 """,
@@ -498,7 +610,7 @@ class Moulinette:
                 pass  # list.h will be included via #include "list.h"
 
             # Case A: Exercise has harness or pool main.c (It is a FUNCTION)
-            if has_pool_main or (has_custom_harness and not student_has_main):
+            if has_pool_main or has_custom_harness:
                 # Write main harness
                 main_src = os.path.join(sandbox_dir, "test_main.c")
                 if has_pool_main:
