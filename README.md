@@ -1,69 +1,247 @@
-# 🏊 42 Piscine Exam Simulator
+<div align="center">
 
-Welcome to the ultimate **42 Piscine Exam Simulator**! 🚀
+<img src=".github/assets/rqs_piscine_banner.png" alt="RQS-PISCINE-42 Exam Simulator" width="100%">
 
-This project is a highly realistic, offline simulation of the infamous 42 Piscine Exams (Exam00, Exam01, Exam02, Exam03). It faithfully reproduces the behavior of the real **Moulinette** and the `examshell` environment, including:
-- 🎲 Dynamic difficulty scaling based on your successes and failures.
-- 📂 Automatic workspace generation (`rendu` and `subjects`).
-- 📝 Realistic trace logs (`trace/`) exactly like the real exam.
-- 💾 Automatic session archiving so you never lose your practice history.
-- 🌈 A beautiful TrueColor Cyberpunk ASCII boot sequence!
+</div>
 
----
+<br>
 
-## 🛠️ Installation & Usage
-
-The simulator is written in pure Python and requires **no external dependencies**. It is designed to run anywhere, whether you are practicing at home on Windows or warming up on a campus iMac.
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/yourusername/42-exam-simulator.git
-cd 42-exam-simulator
-```
-
-### 2. Choose your version
-We provide three specialized launchers depending on your operating system. They all use the same exercise database (`pool/`) but are optimized for terminal handling on their respective systems:
-
-#### 🍎 macOS (42 School iMacs)
-Perfect for running natively on the school's Apple machines.
-```bash
-chmod +x examshell_mac.py
-./examshell_mac.py
-```
-*(Or simply `python3 examshell_mac.py`)*
-
-#### 🐧 Linux (Ubuntu / Debian)
-Optimized for 42 campus machines booting on a Linux session. It hooks into the native `gnome-terminal`.
-```bash
-chmod +x examshell_linux.py
-./examshell_linux.py
-```
-*(Or simply `python3 examshell_linux.py`)*
-
-#### 🪟 Windows
-Perfect for training at home. It hooks into PowerShell.
-```powershell
-python examshell.py
-```
+> [!IMPORTANT]
+> **Educational & Independent Project**  
+> `RQS-PISCINE-42` is an independent student project. It is **not** affiliated with, endorsed by, or an official tool of École 42.  
+> It does not contain official exam source code or leak official answers. Exercises are community-sourced approximations designed purely to train your terminal reflexes and C basics.
 
 ---
 
-## 🎮 How it works
+## 📖 Why I Built This
 
-1. **Select your Exam**: Upon launch, the simulator will ask you to pick an exam (e.g., `Exam00`, `Exam01`, `Exam02`, `Exam03`).
-2. **Assignments**: Type `status` or `subject` to get your first assignment.
-3. **Workspace**: A `rendu/` directory will pop up. This is your workspace. Inside, you will find a `subjects/` folder containing the instructions for your current exercise.
-4. **Grading**: Once you have written your `.c` file in the `rendu/` directory, simply type:
-   ```bash
-   grademe
-   ```
-   - **SUCCESS**: You get points and move to a harder level.
-   - **FAILURE**: You stay on the same exercise. Check the `trace/` folder for compiler errors or diff outputs!
+Before starting the 42 Piscine, I had essentially zero experience with C.
+
+During the first exam sessions, I realized how drastically the exam environment differs from solving exercises at home: the strict Git workflow, the isolation, the lack of internet, the ticking clock, and that specific pressure of not knowing whether your code will survive the Moulinette.
+
+One evening, stressing over the upcoming exam, I thought:
+> *"What if I had a small local tool to practice taking an exam from start to finish, completely offline?"*
+
+So I started writing a script. What began as a simple test runner quickly evolved into a full simulation: dynamic exercise assignment, a local bare Git repository mimicking Vogsphere, automated multi-case grading with compilation flags, level progression, and trace generation.
+
+More than anything, building this project was my way of truly understanding systems, Git mechanics, and C — by building something useful instead of just doing the assignments.
 
 ---
 
-## 📁 The `pool/` Database
-This simulator uses a massive, community-sourced database of exercises, rigorously classified by difficulty level to match the real Moulinette's internal algorithms. 
-*(Includes tricky edge-case exercises like `inter`, `ft_split`, and bitwise operators!)*
+## ⚙️ How It Works (The Pipeline)
 
-Good luck, and may the Moulinette be with you! 🍀
+Most practice tools just test whatever dirty files are sitting in your current folder. That's not how 42 works.
+
+In the real exam, **only what you push to the remote server gets graded**. If you forget to `git add`, `git commit`, or `git push`, you get an instant 0.
+
+This simulator replicates that exact client/server separation locally using a **bare Git repository**:
+
+```
+                     ┌──────────────────┐
+                     │   Start Exam     │
+                     └────────┬─────────┘
+                              │
+                              ▼
+                     ┌──────────────────┐
+                     │ Exercise chosen  │
+                     └────────┬─────────┘
+                              │
+                              ▼
+                     ┌──────────────────┐
+                     │     rendu/       │  <-- You write your .c code here
+                     └────────┬─────────┘
+                              │
+                         git add .
+                         git commit -m "submit"
+                         git push
+                              │
+                              ▼
+                     ┌──────────────────┐
+                     │ Local Vogsphere  │  <-- Bare Git server (server/rendu.git)
+                     └────────┬─────────┘
+                              │
+                           grademe
+                              │
+                              ▼
+                     ┌──────────────────┐
+                     │  Isolated Clone  │  <-- Clones fresh from bare repo
+                     │   + cc -Wall...  │
+                     │   + Unit Tests   │
+                     └────────┬─────────┘
+                              │
+                       ┌──────┴──────┐
+                       │             │
+                     PASS          FAIL
+                       │             │
+                       ▼             ▼
+                 (Next Level)    (trace/ log generated)
+```
+
+When you type `grademe`, the evaluation engine creates a temporary sandbox, clones from the local bare repo, compiles strictly with `cc -Wall -Wextra -Werror`, and tests against multiple edge cases. If it fails, an exact `trace/` file is written to guide your debugging.
+
+---
+
+## ⚡ Core Features
+
+| Module | Description |
+| :--- | :--- |
+| 🚫 **No Norminette** | In the exam, only your logic and your output matter. The Norminette won't bother you here. Focus on making it work. |
+| 🎲 **Improbability Drive** | The engine smoothly assigns exercises based on your current level. Pass, and you move forward; fail, and it gives you another chance to learn. |
+| 🧠 **Deep Thought Core** | The built-in Moulinette silently checks your compilation, standard output, and memory. If something breaks, a realistic `trace/` file is generated to help you understand your mistakes. |
+| 💾 **Sub-Etha Archiving** | Your sessions and scores are quietly archived in the background, allowing you to track your progress over time. |
+| 🔒 **Encrypted Knowledge** | The exercise database (`pool.enc`) is encrypted. No peeking at the answers before you've found the Ultimate Question! |
+| ☕️ **Don't Panic UI** | A retro-CRT boot sequence designed to help you relax, take a deep breath, and get into the zone. |
+
+---
+
+## 🚀 Installation & Quick Start
+
+Clone the repository and run the launcher — that's it:
+
+```bash
+# 1. Clone the project
+git clone https://github.com/RQS42/RQS-PISCINE-42.git
+cd RQS-PISCINE-42
+
+# 2. Launch the simulator
+python3 dont_panic.py
+```
+*(On Windows PowerShell, use `python dont_panic.py`)*
+
+### In-Exam Commands:
+* `status` / `subject` : View your current assigned problem, level, and points.
+* `grademe` : Trigger the Moulinette evaluation on your pushed commit.
+* `finish` : End the exam session and generate your recap score.
+* `help` : Display all available interactive commands.
+
+---
+
+## 📁 Project Architecture
+
+```text
+RQS-PISCINE-42/
+│
+├── dont_panic.py                   # Universal cross-platform entry point
+├── README.md                       # Documentation & philosophy
+├── LICENSE                         # MIT License
+│
+├── data/
+│   └── ultimate_question_pool.enc  # Encrypted exercise & test suite
+│
+├── deep_thought_core/              # Core simulation engine
+│   ├── babel_crypto.py             # AES-like stream decryption & RAM loader
+│   ├── guide_stats.py              # Performance & session analytics
+│   ├── improbability_drive.py      # State machine & exam shell loop
+│   ├── moulinette_vogon_auditor.py # Compiler, sandbox & test runner
+│   └── sirius_cybernetics_ui.py    # Terminal ASCII rendering & color themes
+│
+├── vogon_tools/
+│   └── vogon_packer.py             # CLI packager for pool exercises
+│
+└── mice_tests/                     # Internal test suite
+    ├── test_crypto.py
+    ├── test_moulinette.py
+    └── test_stats.py
+```
+
+---
+
+## 🎯 What this Project Is — and Isn't
+
+| ✅ What it IS | ❌ What it is NOT |
+| :--- | :--- |
+| An offline training gym for the Piscine | An official École 42 software |
+| A realistic practice tool for Git and C under pressure | A cheat sheet or leak of actual exam content |
+| A zero-dependency, open-source personal project | A 1:1 clone of 42's internal server infrastructure |
+| A safe space to make mistakes and learn from `trace/` logs | A replacement for peer-learning in the cluster |
+
+---
+
+## 🤝 Contributing & Peer Spirit
+
+42 is built on peer-to-peer learning. If you spot a bug, want to suggest better edge-case tests, or wish to contribute additional practice problems to the pool:
+
+1. Fork the project & create your branch (`git checkout -b feature/new-exercise`)
+2. Commit your improvements (`git commit -m 'Add edge case for ft_split'`)
+3. Open a **Pull Request** or submit an **Issue**
+
+---
+
+## 🌟 Credits
+
+A special shoutout to **[mini-moulinette](https://github.com/k11q/mini-moulinette)** by *k11q / khairulhaaziq*. Their work on automated C test cases was a huge source of inspiration for structuring our evaluation engine.
+
+---
+
+## ⚖️ License
+
+Distributed under the **[MIT License](LICENSE)**. Feel free to use, modify, and share it.
+
+<div align="center">
+  <br>
+  <b><i>Good luck, Pisciner. Don't Panic! 🚀</i></b>
+  <br><br>
+</div>
+
+<div align="center">
+<details>
+<summary><b>🥚</b> <i>(Click to expand)</i></summary>
+
+<br>
+<i>
+Gazing through the window at the world outside<br>
+Wondering will mother earth survive<br>
+Hoping that mankind will stop abusing her<br>
+Sometime<br>
+<br>
+After all, there's only just the two of us<br>
+And here we are, still fighting for our lives<br>
+Watching all of history repeat itself<br>
+Time after time<br>
+<br>
+I'm just a dreamer<br>
+I dream my life away<br>
+I'm just a dreamer<br>
+Who dreams of better days<br>
+<br>
+I watch the sun go down like every one of us<br>
+I'm hoping that the dawn will bring a sign<br>
+A better place for those who will come after us<br>
+This time<br>
+<br>
+I'm just a dreamer<br>
+I dream my life away<br>
+Oh, yeah<br>
+I'm just a dreamer<br>
+Who dreams of better days<br>
+<br>
+Your higher power may be God or Jesus Christ<br>
+It doesn't really matter much to me<br>
+Without each other's help, there ain't no hope for us<br>
+I'm living in a dream, a fantasy<br>
+Oh, yeah-yeah-yeah<br>
+If only we could all just find serenity<br>
+It would be nice if we could live as one<br>
+When will all this anger, hate and bigotry be gone?<br>
+<br>
+I'm just a dreamer<br>
+I dream my life away<br>
+Today<br>
+<br>
+I'm just a dreamer<br>
+Who dreams of better days<br>
+Oh, yeah<br>
+<br>
+I'm just a dreamer<br>
+Who's searching for the way<br>
+Today<br>
+<br>
+I'm just a dreamer<br>
+Dreaming my life away<br>
+Oh, yeah-yeah-yeah<br>
+</i>
+<br>
+— <b>Ozzy Osbourne, <i>Dreamer</i></b>
+
+</details>
+</div>
