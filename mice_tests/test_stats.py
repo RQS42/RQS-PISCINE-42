@@ -65,6 +65,24 @@ class TestStats(unittest.TestCase):
         self.assertIn("only_z", exam01_data["solved_exercises"])
         self.assertIn("ft_strlen", exam01_data["solved_exercises"])
 
+    def test_exam_progression_schedules(self):
+        from deep_thought_core.improbability_drive import ExamEngine, EXAM_PROGRESSION_SCHEDULE
+        engine = ExamEngine(BASE_DIR)
+        for exam_name, schedule in EXAM_PROGRESSION_SCHEDULE.items():
+            total_pts = sum(pts for _, pts in schedule)
+            self.assertEqual(total_pts, 100, f"{exam_name} schedule does not sum to 100 points")
+            
+            engine.selected_exam = exam_name
+            engine.login_id = "test_user"
+            engine.setup_exam()
+            
+            # Verify exercises can be picked sequentially
+            for lvl, pts in schedule:
+                ex = engine.pick_next_exercise(lvl)
+                self.assertIsNotNone(ex, f"Failed to pick exercise for {exam_name} level {lvl}")
+                ex_name = ex.split("-", 1)[1] if "-" in ex else ex
+                engine.session_solved.add(ex_name)
+
 
 if __name__ == "__main__":
     unittest.main()

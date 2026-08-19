@@ -39,6 +39,8 @@ def _get_default_passphrase() -> str:
     encoded = b'NDJfbW91bGluZXR0ZV9zZWNyZXRfa2V5X3Jxc19waXNjaW5lX2V4YW0='
     return base64.b64decode(encoded).decode('utf-8')
 
+DEFAULT_PASSPHRASE = _get_default_passphrase()
+
 
 def _derive_keys(passphrase: str, salt: bytes):
     """Derive 64 bytes of key material: 32 bytes for ChaCha/Keystream, 32 bytes for HMAC."""

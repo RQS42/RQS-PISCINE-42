@@ -20,11 +20,14 @@ import os
 import sys
 import time
 import random
-import readline
+try:
+    import readline
+except ImportError:
+    readline = None
 import subprocess
 import shutil
 import getpass
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple, Set
 
 from deep_thought_core.babel_crypto import PoolManager
 from deep_thought_core.guide_stats import StatsManager, SessionRecorder
@@ -53,6 +56,61 @@ from deep_thought_core.sirius_cybernetics_ui import (
     open_work_terminal,
     progress_bar,
 )
+
+# Progression schedule per Exam: List of (level_number, points_awarded) for each step
+EXAM_PROGRESSION_SCHEDULE: Dict[str, List[Tuple[int, int]]] = {
+    "Exam00": [
+        (0, 10),
+        (1, 10),
+        (1, 10),
+        (2, 10),
+        (3, 15),
+        (4, 15),
+        (4, 15),
+        (5, 15),
+    ],
+    "Exam01": [
+        (0, 10),
+        (1, 10),
+        (1, 10),
+        (2, 10),
+        (2, 10),
+        (3, 10),
+        (3, 15),
+        (4, 10),
+        (5, 15),
+    ],
+    "Exam02": [
+        (0, 10),
+        (1, 10),
+        (2, 10),
+        (2, 10),
+        (3, 10),
+        (3, 10),
+        (3, 10),
+        (4, 10),
+        (5, 10),
+        (6, 10),
+    ],
+    "Exam03": [
+        (0, 10),
+        (1, 10),
+        (2, 10),
+        (3, 10),
+        (4, 5),
+        (5, 5),
+        (6, 5),
+        (7, 5),
+        (8, 5),
+        (9, 5),
+        (10, 5),
+        (11, 5),
+        (12, 5),
+        (13, 5),
+        (14, 5),
+        (14, 5),
+    ],
+}
 
 
 class ExamEngine:
@@ -181,14 +239,30 @@ class ExamEngine:
             )
 
     def setup_exam(self):
-        """Builds exam level hierarchy and starts session recorder."""
+        """Builds exam level hierarchy, progression schedule and starts session recorder."""
         self.levels_dict = self.pool_manager.get_exam_levels(self.selected_exam)
         self.levels = sorted(self.levels_dict.keys())
-        self.current_level_idx = 0
+
+        if self.selected_exam in EXAM_PROGRESSION_SCHEDULE:
+            self.schedule = EXAM_PROGRESSION_SCHEDULE[self.selected_exam]
+        else:
+            total = len(self.levels)
+            if total == 0:
+                self.schedule = [(0, 100)]
+            else:
+                base = 100 // total
+                rem = 100 % total
+                self.schedule = [
+                    (lvl, base + (rem if i == total - 1 else 0))
+                    for i, lvl in enumerate(self.levels)
+                ]
+
+        self.current_step_idx = 0
         self.current_exercise_dir = None
         self.current_exercise = None
         self.points = 0
         self.exercise_attempts = 0
+        self.session_solved: Set[str] = set()
 
         self.session_recorder = SessionRecorder(
             self.base_dir, self.selected_exam, self.login_id
@@ -201,31 +275,44 @@ class ExamEngine:
         if not exercises:
             return None
 
-        # Check previously solved exercises to prioritize variety
+        # Exclude exercises already solved in the CURRENT session
+        unsolved_in_session = [
+            ex
+            for ex in exercises
+            if (ex.split("-", 1)[1] if "-" in ex else ex) not in self.session_solved
+        ]
+
+        # Check previously solved exercises across historical sessions to prioritize variety
         agg = self.stats_manager.get_aggregated_stats(self.pool_manager)
         exam_data = agg["exams"].get(self.selected_exam, {})
         solved_names = set(exam_data.get("solved_exercises", []))
 
-        unsolved = [
+        candidates = [
             ex
-            for ex in exercises
+            for ex in unsolved_in_session
             if (ex.split("-", 1)[1] if "-" in ex else ex) not in solved_names
         ]
-        if unsolved:
-            return random.choice(unsolved)
+        if candidates:
+            return random.choice(candidates)
+        if unsolved_in_session:
+            return random.choice(unsolved_in_session)
         return random.choice(exercises)
 
-    def get_level_points(self, level_idx: int) -> int:
-        """Each validated assignment in 42 Piscine gives 10 points."""
+    def get_level_points(self, step_idx: Optional[int] = None) -> int:
+        """Returns the point value for a specific step in the exam schedule."""
+        if step_idx is None:
+            step_idx = self.current_step_idx
+        if 0 <= step_idx < len(self.schedule):
+            return self.schedule[step_idx][1]
         return 10
 
     def assign_exercise(self):
         """Assigns current level exercise and creates subject/rendu directories."""
-        if self.current_level_idx >= len(self.levels) or self.points >= 100:
+        if self.current_step_idx >= len(self.schedule) or self.points >= 100:
             print(f"\n{GREEN}{BOLD}🎉 You have completed the exam!{RESET}")
             return
 
-        level_num = self.levels[self.current_level_idx]
+        level_num = self.schedule[self.current_step_idx][0]
         self.current_exercise_dir = self.pick_next_exercise(level_num)
         self.exercise_attempts = 0
 
@@ -257,12 +344,12 @@ class ExamEngine:
             raise ValueError("SECURITY BREACH: Path Traversal detected.")
         os.makedirs(user_rendu_dir, exist_ok=True)
 
-        level_pts = self.get_level_points(self.current_level_idx)
+        level_pts = self.get_level_points(self.current_step_idx)
 
         print(
             f"\n{COLOR_42_TEAL}{BOLD}= Assignment ==================================================================={RESET}"
         )
-        print(f"You are currently at {BOLD}Level {self.current_level_idx}{RESET}")
+        print(f"You are currently at {BOLD}Level {level_num}{RESET} (Question {self.current_step_idx + 1}/{len(self.schedule)})")
         print(f"You have been assigned: {CYAN}{BOLD}{self.current_exercise}{RESET}")
         print(f"This assignment is worth: {GREEN}{BOLD}{level_pts} points{RESET}")
         print(f"Current score: {COLOR_GOLD}{BOLD}{self.points} / 100{RESET}")
@@ -289,11 +376,12 @@ class ExamEngine:
         if self.current_exercise is None:
             self.assign_exercise()
         else:
-            cur_pts = self.get_level_points(self.current_level_idx)
+            cur_pts = self.get_level_points(self.current_step_idx)
+            level_num = self.schedule[self.current_step_idx][0] if self.current_step_idx < len(self.schedule) else 0
             print(
                 f"\n{COLOR_42_TEAL}{BOLD}= Exam Status =================================================================={RESET}"
             )
-            print(f"You are currently at level {BOLD}{self.current_level_idx}{RESET}")
+            print(f"You are currently at level {BOLD}{level_num}{RESET} (Question {self.current_step_idx + 1}/{len(self.schedule)})")
             print(
                 f"You are working on the assignment: {CYAN}{BOLD}{self.current_exercise}{RESET}"
             )
@@ -358,10 +446,11 @@ class ExamEngine:
             server_repo=self.server_repo,
         )
 
-        level_pts = self.get_level_points(self.current_level_idx)
+        level_pts = self.get_level_points(self.current_step_idx)
 
         if passed:
             self.points = min(100, self.points + level_pts)
+            self.session_solved.add(self.current_exercise)
 
             print(f"\n{GREEN}{BOLD}>>>>>>>>>> SUCCESS <<<<<<<<<<{RESET}")
             print(
@@ -372,9 +461,10 @@ class ExamEngine:
                 f"Your current score is now: {COLOR_GOLD}{BOLD}{self.points} / 100{RESET}.\n"
             )
 
+            current_lvl = self.schedule[self.current_step_idx][0] if self.current_step_idx < len(self.schedule) else 0
             if self.session_recorder:
                 self.session_recorder.record_exercise(
-                    level=self.current_level_idx,
+                    level=current_lvl,
                     exercise_dir=self.current_exercise_dir,
                     exercise_name=self.current_exercise,
                     status="SUCCESS",
@@ -382,24 +472,26 @@ class ExamEngine:
                     points_earned=level_pts,
                 )
 
-            self.current_level_idx += 1
+            self.current_step_idx += 1
             self.current_exercise = None
             self.current_exercise_dir = None
 
-            if self.current_level_idx >= len(self.levels) or self.points >= 100:
+            if self.current_step_idx >= len(self.schedule) or self.points >= 100:
                 print(
                     f"{COLOR_GOLD}{BOLD}🏆 CONGRATULATIONS! You have reached {self.points}/100!{RESET}"
                 )
                 self.cmd_finish(force_exit=True)
             else:
-                next_pts = self.get_level_points(self.current_level_idx)
+                next_lvl = self.schedule[self.current_step_idx][0]
+                next_pts = self.get_level_points(self.current_step_idx)
                 print(
-                    f"You move on to {BOLD}Level {self.current_level_idx}{RESET} (worth {next_pts} points)!"
+                    f"You move on to {BOLD}Level {next_lvl}{RESET} (Question {self.current_step_idx + 1}/{len(self.schedule)}, worth {next_pts} points)!"
                 )
                 print(
                     f"Type {BOLD}{GREEN}status{RESET} to receive your next assignment.\n"
                 )
         else:
+            current_lvl = self.schedule[self.current_step_idx][0] if self.current_step_idx < len(self.schedule) else 0
             print(f"\n{RED}{BOLD}>>>>>>>>>> FAILURE <<<<<<<<<<{RESET}")
             print(
                 f"You have failed the assignment {BOLD}{self.current_exercise}{RESET}."
@@ -409,7 +501,7 @@ class ExamEngine:
                 print(f"A trace has been generated in: {CYAN}{rel_trace}{RESET}")
 
             print(
-                f"\nYou are currently at {BOLD}Level {self.current_level_idx}{RESET} with {COLOR_GOLD}{BOLD}{self.points} / 100{RESET} points."
+                f"\nYou are currently at {BOLD}Level {current_lvl}{RESET} with {COLOR_GOLD}{BOLD}{self.points} / 100{RESET} points."
             )
             print(
                 f"You can retry this assignment for {GREEN}{level_pts} points{RESET}, or you can finish the exam."
@@ -418,7 +510,7 @@ class ExamEngine:
 
             if self.session_recorder:
                 self.session_recorder.record_exercise(
-                    level=self.current_level_idx,
+                    level=current_lvl,
                     exercise_dir=self.current_exercise_dir,
                     exercise_name=self.current_exercise,
                     status="FAILURE",
