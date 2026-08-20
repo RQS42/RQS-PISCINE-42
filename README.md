@@ -162,6 +162,42 @@ RQS-PISCINE-42/
 
 ---
 
+## 🔮 What's Next? (The Pure C v2.0 Vision)
+
+When I first started building this tool in Python, it was just a quick prototype to help me practice for exams without stressing. But as the project grew, one question kept nagging at me:
+
+> *"If this tool is meant to prepare us for 42, shouldn't it be written in pure C, built like a real Piscine Rush, and 100% Norminette-compliant?"*
+
+That's the ultimate goal for **v2.0**. I want to team up with fellow Pisciners to rebuild the entire simulator from scratch in C99, as a weekend "Rush" project. No Python runtime, no external libraries — just a single, blistering-fast `./dont_panic` binary compiled with `make`.
+
+### 🛠️ The Tech Stack (Under the Hood)
+
+| Module / Feature | POSIX & System Call Magic | What it Does |
+| :--- | :--- | :--- |
+| 📏 **Strict 42 Norm** | C99 + 42 `norminette` | Zero leaks, max 25 lines/function, 5 functions/file. Fully compliant. |
+| ⚙️ **Process Isolation** | `fork()`, `execvp()`, `waitpid()` | Compiles and runs student code in an isolated sandbox so crashes don't kill the shell. |
+| ⏳ **Anti-Loop Shield** | `alarm(3)`, `SIGALRM` | Instantly kills infinite loops after 3 seconds without freezing your terminal. |
+| 📡 **Output Capture** | `pipe()`, `dup2()` | Intercepts `stdout` and `stderr` to compare student results against references. |
+| 🎨 **Terminal TUI** | ANSI TrueColor + `ioctl()` | Auto-detects terminal width and renders retro CRT visuals dynamically. |
+| 🔒 **RAM-Only Crypto** | Standalone ChaCha20 Cipher | Decrypts `pool.enc` directly into heap RAM (`malloc`) with zero disk footprint. |
+| 📦 **Build System** | Pure GNU `Makefile` | One `make` command to build the entire standalone binary. |
+
+---
+
+### 🎨 Visual Architecture & Team Sprints
+
+```mermaid
+flowchart LR
+    classDef tech fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#fff;
+    classDef norm fill:#313244,stroke:#a6e3a1,stroke-width:2px,color:#fff;
+
+    A["<b>1. POSIX Core Engine</b><br/>━━━━━━━━━━━━━━━<br/>• fork() + execvp() cc<br/>• pipe() stdout capture<br/>• SIGALRM 3s timeout"]:::tech --> B["<b>2. Pure C RAM Crypto</b><br/>━━━━━━━━━━━━━━━<br/>• ChaCha20 decryptor<br/>• In-memory pool load<br/>• Zero disk footprint"]:::tech
+
+    B --> C["<b>3. ANSI TrueColor UI</b><br/>━━━━━━━━━━━━━━━<br/>• ioctl() auto-resize<br/>• Retro CRT boot theme<br/>• Interactive REPL"]:::norm --> D["<b>4. Team Rush & Norm</b><br/>━━━━━━━━━━━━━━━<br/>• Collaborative Rush Sprint<br/>• 100% Norminette pass<br/>• Single ./dont_panic binary"]:::norm
+```
+
+---
+
 ## 🤝 Contributing & Peer Spirit
 
 42 is built on peer-to-peer learning. If you spot a bug, want to suggest better edge-case tests, or wish to contribute additional practice problems to the pool:
