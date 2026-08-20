@@ -11,6 +11,14 @@
 > `RQS-PISCINE-42` is an independent student project. It is **not** affiliated with, endorsed by, or an official tool of École 42.  
 > It does not contain official exam source code or leak official answers. Exercises are community-sourced approximations designed purely to train your terminal reflexes and C basics.
 
+<br>
+
+<div align="center">
+
+[Story](#-why-i-built-this) • [Pipeline](#%EF%B8%8F-how-it-works-the-pipeline) • [Features](#-core-features) • [Installation](#-installation--quick-start) • [Architecture](#-project-architecture) • [Vision v2.0](#-whats-next-the-pure-c-v20-vision) • [Contributing](#-contributing--peer-spirit) • [License](#%EF%B8%8F-license)
+
+</div>
+
 ---
 
 ## 📖 Why I Built This
