@@ -187,13 +187,21 @@ That's the ultimate goal for **v2.0**. I want to team up with fellow Pisciners t
 ### 🎨 Visual Architecture & Team Sprints
 
 ```mermaid
-flowchart LR
+flowchart TD
+    subgraph ROW1["🚀 SPRINT 1: POSIX CORE & CRYPTO"]
+        P1["<b>1. POSIX Core Engine</b><br/>━━━━━━━━━━━━━━━<br/>• fork() + execvp() cc<br/>• pipe() stdout capture<br/>• SIGALRM 3s timeout"] --> P2["<b>2. Pure C RAM Crypto</b><br/>━━━━━━━━━━━━━━━<br/>• ChaCha20 decryptor<br/>• In-memory pool load<br/>• Zero disk footprint"]
+    end
+
+    subgraph ROW2["🎨 SPRINT 2: UI & RUSH NORMINETTE"]
+        P3["<b>3. ANSI TrueColor UI</b><br/>━━━━━━━━━━━━━━━<br/>• ioctl() auto-resize<br/>• Retro CRT boot theme<br/>• Interactive REPL"] --> P4["<b>4. Team Rush & Norm</b><br/>━━━━━━━━━━━━━━━<br/>• Collaborative Rush Sprint<br/>• 100% Norminette pass<br/>• Single ./dont_panic binary"]
+    end
+
+    ROW1 --> ROW2
+
     classDef tech fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#fff;
     classDef norm fill:#313244,stroke:#a6e3a1,stroke-width:2px,color:#fff;
-
-    A["<b>1. POSIX Core Engine</b><br/>━━━━━━━━━━━━━━━<br/>• fork() + execvp() cc<br/>• pipe() stdout capture<br/>• SIGALRM 3s timeout"]:::tech --> B["<b>2. Pure C RAM Crypto</b><br/>━━━━━━━━━━━━━━━<br/>• ChaCha20 decryptor<br/>• In-memory pool load<br/>• Zero disk footprint"]:::tech
-
-    B --> C["<b>3. ANSI TrueColor UI</b><br/>━━━━━━━━━━━━━━━<br/>• ioctl() auto-resize<br/>• Retro CRT boot theme<br/>• Interactive REPL"]:::norm --> D["<b>4. Team Rush & Norm</b><br/>━━━━━━━━━━━━━━━<br/>• Collaborative Rush Sprint<br/>• 100% Norminette pass<br/>• Single ./dont_panic binary"]:::norm
+    class P1,P2 tech;
+    class P3,P4 norm;
 ```
 
 ---
